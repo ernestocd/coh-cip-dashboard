@@ -2,21 +2,11 @@ let chartType, chartStatus;
 let currentProjectIndex = 0;
 let filteredFeatures = [];
 let allFeatures = [];
-let districtMap, neighborhoodMap;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Fetch GeoJSON data with enhanced logging
-    console.log("Attempting to fetch GeoJSON data...");
     fetch("data/COH_CIPSpnt.geojson")
-        .then(response => {
-            console.log("Fetch response status:", response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status} (${response.statusText})`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log("GeoJSON data received:", data);
             const geojsonLayer = {
                 features: data.features
             };
@@ -35,98 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("projectDetails").innerHTML = "<p>No projects available.</p>";
             }
         })
-        .catch(err => {
-            console.error("Fetch error:", err);
-            document.getElementById("projectDetails").innerHTML = "<p>Error loading data: " + err.message + "</p>";
-        });
-
-    // Load ArcGIS modules for maps
-    console.log("Loading ArcGIS modules...");
-    require([
-        "esri/Map",
-        "esri/views/MapView",
-        "esri/layers/GeoJSONLayer",
-        "esri/widgets/Legend"
-    ], (Map, MapView, GeoJSONLayer, Legend) => {
-        console.log("ArcGIS modules loaded successfully");
-        const geojsonLayerForMap = new GeoJSONLayer({
-            url: "data/COH_CIPSpnt.geojson",
-            popupTemplate: {
-                title: "{ProjectName}",
-                content: [
-                    {
-                        type: "fields",
-                        fieldInfos: [
-                            { fieldName: "Type", label: "Project Type" },
-                            { fieldName: "CategoryDepartment", label: "Category/Department" },
-                            { fieldName: "ProjectStatus", label: "Status" },
-                            { fieldName: "PrimaryFundingSource", label: "Primary Funding Source" },
-                            { fieldName: "ConstructionStartDate", label: "Construction Start Date" },
-                            { fieldName: "ConstructionCompletionDate", label: "Construction End Date" }
-                        ]
-                    }
-                ]
-            },
-            renderer: {
-                type: "simple",
-                symbol: {
-                    type: "simple-marker",
-                    color: "#0056b3",
-                    size: 8,
-                    outline: {
-                        color: "#ffffff",
-                        width: 1
-                    }
-                }
-            }
-        });
-
-        // Initialize District Map
-        districtMap = new Map({
-            basemap: "streets-vector",
-            layers: [geojsonLayerForMap]
-        });
-
-        const districtView = new MapView({
-            container: "map-district",
-            map: districtMap,
-            center: [-80.1496, 26.0112],
-            zoom: 12
-        });
-
-        districtView.when(() => {
-            const districtLegend = new Legend({
-                view: districtView
-            });
-            districtView.ui.add(districtLegend, "bottom-left");
-            console.log("District map initialized");
-        });
-
-        // Initialize Neighborhood Map
-        neighborhoodMap = new Map({
-            basemap: "streets-vector",
-            layers: [geojsonLayerForMap]
-        });
-
-        const neighborhoodView = new MapView({
-            container: "map-neighborhood",
-            map: neighborhoodMap,
-            center: [-80.1496, 26.0112],
-            zoom: 12
-        });
-
-        neighborhoodView.when(() => {
-            const neighborhoodLegend = new Legend({
-                view: neighborhoodView
-            });
-            neighborhoodView.ui.add(neighborhoodLegend, "bottom-left");
-            console.log("Neighborhood map initialized");
-        });
-    }, (err) => {
-        console.error("Error loading ArcGIS modules:", err);
-        document.getElementById("map-district").innerHTML = "<p>Error loading map: ArcGIS modules failed to load.</p>";
-        document.getElementById("map-neighborhood").innerHTML = "<p>Error loading map: ArcGIS modules failed to load.</p>";
-    });
+        .catch(err => console.error("Fetch error:", err));
 });
 
 function switchTab(tab) {
@@ -145,6 +44,7 @@ function populateFilters(features) {
     };
 
     function updateDependentFilters() {
+        // Get the selected project type from radio buttons
         const projectTypeRadios = document.querySelectorAll('input[name="project-type"]');
         let projectTypeValue = "All";
         projectTypeRadios.forEach(radio => {
@@ -171,6 +71,7 @@ function populateFilters(features) {
         });
         console.log("Filtered features:", filtered.length);
 
+        // Populate filter-type radio buttons (always show all options from allFeatures)
         const typeValues = new Set();
         allFeatures.forEach(f => {
             const attrs = f.properties || f.attributes || {};
@@ -181,8 +82,9 @@ function populateFilters(features) {
         });
         console.log("Values for filter-type:", Array.from(typeValues));
 
+        // Populate other dropdowns with dependent filtering
         for (const [id, config] of Object.entries(fields)) {
-            if (id === "filter-type") continue;
+            if (id === "filter-type") continue; // Skip filter-type since it's now radio buttons
             const select = document.getElementById(id);
             if (!select) {
                 console.log(`Select element not found: ${id}`);
@@ -211,22 +113,16 @@ function populateFilters(features) {
             console.log(`Values for ${id}:`, Array.from(values));
 
             const currentValue = select.value;
-            if (values.size === 0) {
-                select.innerHTML = `<option value="All">N/A</option>`;
-                select.disabled = true;
-            } else {
-                select.innerHTML = `<option value="All">All</option>`;
-                Array.from(values).sort().forEach(v => {
-                    const label = config.map ? config.map[v] : v;
-                    select.innerHTML += `<option value="${v}">${label || 'Unnamed'}</option>`;
-                });
-                select.disabled = false;
+            select.innerHTML = `<option value="All">All</option>`;
+            Array.from(values).sort().forEach(v => {
+                const label = config.map ? config.map[v] : v;
+                select.innerHTML += `<option value="${v}">${label || 'Unnamed'}</option>`;
+            });
 
-                if (Array.from(values).includes(currentValue) || currentValue === "All") {
-                    select.value = currentValue;
-                } else {
-                    select.value = "All";
-                }
+            if (Array.from(values).includes(currentValue) || currentValue === "All") {
+                select.value = currentValue;
+            } else {
+                select.value = "All";
             }
         }
         filteredFeatures = filtered;
@@ -234,6 +130,7 @@ function populateFilters(features) {
         updateProjectDetails(0);
     }
 
+    // Add event listeners for dropdowns (excluding filter-type)
     for (const [id, config] of Object.entries(fields)) {
         if (id === "filter-type") continue;
         const select = document.getElementById(id);
@@ -244,19 +141,23 @@ function populateFilters(features) {
         select.addEventListener("change", updateDependentFilters);
     }
 
+    // Add event listeners for project type radio buttons
     const projectTypeRadios = document.querySelectorAll('input[name="project-type"]');
     projectTypeRadios.forEach(radio => {
         radio.addEventListener("change", updateDependentFilters);
     });
 
+    // Add Clear All Filters button functionality
     const clearButton = document.getElementById("clear-filters");
     if (clearButton) {
         clearButton.addEventListener("click", () => {
+            // Reset dropdowns
             Object.keys(fields).forEach(id => {
                 if (id === "filter-type") return;
                 const select = document.getElementById(id);
                 if (select) select.value = "All";
             });
+            // Reset project type radio to "All"
             const allRadio = document.querySelector('input[name="project-type"][value="All"]');
             if (allRadio) allRadio.checked = true;
             filteredFeatures = allFeatures;
