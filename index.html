@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="City of Hollywood Capital Improvement Projects Dashboard">
+    <meta name="author" content="City of Hollywood">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>City of Hollywood - CIP Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://js.arcgis.com/4.29/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <h1>City of Hollywood - CIP Dashboard</h1>
+        <nav>
+            <button onclick="switchTab('overview')">Overview</button>
+            <button onclick="switchTab('district')">Commission District</button>
+            <button onclick="switchTab('neighborhood')">Neighborhood</button>
+        </nav>
+    </header>
+    <main>
+        <aside id="filters">
+            <h3>Filters</h3>
+            <div class="filter-group">
+                <label>Project Type</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="project-type" value="All" checked> All</label>
+                    <label><input type="radio" name="project-type" value="0"> Public</label>
+                    <label><input type="radio" name="project-type" value="1"> Private</label>
+                    <label><input type="radio" name="project-type" value="2"> Public-Private</label>
+                </div>
+                <label>Project Category/Dept.</label><select id="filter-category"></select>
+                <label>Project Status</label><select id="filter-status"></select>
+                <label>Primary Funding Source</label><select id="filter-funding"></select>
+                <label>Construction Start Date (Quarter)</label><select id="filter-start"></select>
+                <label>Construction End Date (Quarter)</label><select id="filter-end"></select>
+                <button id="clear-filters">Clear All Filters</button>
+            </div>
+        </aside>
+        <section id="content">
+            <div id="overview-tab" class="tab-content">
+                <div class="metrics">
+                    <div class="metric"><h2>Total Projects</h2><p id="totalProjects">--</p></div>
+                    <div class="metric public"><h3>Public</h3><p id="publicCount">--</p></div>
+                    <div class="metric private"><h3>Private</h3><p id="privateCount">--</p></div>
+                    <div class="metric mixed"><h3>Public-Private</h3><p id="mixedCount">--</p></div>
+                </div>
+                <div class="charts">
+                    <div class="chart-container"><canvas id="chartType"></canvas></div>
+                    <div class="chart-container"><canvas id="chartStatus"></canvas></div>
+                </div>
+                <div id="projectDetails"></div>
+            </div>
+            <div id="district-tab" class="tab-content hidden"><div id="map-district" class="map-view"></div></div>
+            <div id="neighborhood-tab" class="tab-content hidden"><div id="map-neighborhood" class="map-view"></div></div>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
