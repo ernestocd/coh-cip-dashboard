@@ -2,30 +2,125 @@ let chartType, chartStatus;
 let currentProjectIndex = 0;
 let filteredFeatures = [];
 let allFeatures = [];
+let districtMap, neighborhoodMap;
 
 document.addEventListener("DOMContentLoaded", () => {
-    fetch("data/COH_CIPSpnt.geojson")
-        .then(response => response.json())
-        .then(data => {
-            const geojsonLayer = {
-                features: data.features
-            };
-            if (geojsonLayer.features && geojsonLayer.features.length > 0) {
-                allFeatures = geojsonLayer.features;
-                filteredFeatures = geojsonLayer.features;
-                console.log("Features loaded:", allFeatures.length);
-                console.log("Sample feature attributes:", allFeatures[0]?.properties || allFeatures[0]?.attributes);
-                populateFilters(allFeatures);
-                setTimeout(() => {
-                    updateDashboard(allFeatures);
-                    updateProjectDetails(0);
-                }, 100);
-            } else {
-                console.log("No features returned from GeoJSON");
-                document.getElementById("projectDetails").innerHTML = "<p>No projects available.</p>";
-            }
-        })
-        .catch(err => console.error("Fetch error:", err));
+    // Load ArcGIS modules for maps
+    require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/GeoJSONLayer",
+        "esri/widgets/Legend"
+    ], (Map, MapView, GeoJSONLayer, Legend) => {
+        // Fetch GeoJSON data
+        fetch("data/COH_CIPSpnt.geojson")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const geojsonLayer = {
+                    features: data.features
+                };
+                if (geojsonLayer.features && geojsonLayer.features.length > 0) {
+                    allFeatures = geojsonLayer.features;
+                    filteredFeatures = geojsonLayer.features;
+                    console.log("Features loaded:", allFeatures.length);
+                    console.log("Sample feature attributes:", allFeatures[0]?.properties || allFeatures[0]?.attributes);
+                    populateFilters(allFeatures);
+                    setTimeout(() => {
+                        updateDashboard(allFeatures);
+                        updateProjectDetails(0);
+                    }, 100);
+
+                    // Initialize GeoJSON layer for maps
+                    const geojsonLayerForMap = new GeoJSONLayer({
+                        url: "data/COH_CIPSpnt.geojson",
+                        popupTemplate: {
+                            title: "{ProjectName}",
+                            content: [
+                                {
+                                    type: "fields",
+                                    fieldInfos: [
+                                        { fieldName: "Type", label: "Project Type" },
+                                        { fieldName: "CategoryDepartment", label: "Category/Department" },
+                                        { fieldName: "ProjectStatus", label: "Status" },
+                                        { fieldName: "PrimaryFundingSource", label: "Primary Funding Source" },
+                                        { fieldName: "ConstructionStartDate", label: "Construction Start Date" },
+                                        { fieldName: "ConstructionCompletionDate", label: "Construction End Date" }
+                                    ]
+                                }
+                            ]
+                        },
+                        renderer: {
+                            type: "simple",
+                            symbol: {
+                                type: "simple-marker",
+                                color: "#0056b3",
+                                size: 8,
+                                outline: {
+                                    color: "#ffffff",
+                                    width: 1
+                                }
+                            }
+                        }
+                    });
+
+                    // Initialize District Map
+                    districtMap = new Map({
+                        basemap: "streets-vector",
+                        layers: [geojsonLayerForMap]
+                    });
+
+                    const districtView = new MapView({
+                        container: "map-district",
+                        map: districtMap,
+                        center: [-80.1496, 26.0112], // Hollywood, FL coordinates
+                        zoom: 12
+                    });
+
+                    districtView.when(() => {
+                        const districtLegend = new Legend({
+                            view: districtView
+                        });
+                        districtView.ui.add(districtLegend, "bottom-left");
+                    });
+
+                    // Initialize Neighborhood Map
+                    neighborhoodMap = new Map({
+                        basemap: "streets-vector",
+                        layers: [geojsonLayerForMap]
+                    });
+
+                    const neighborhoodView = new MapView({
+                        container: "map-neighborhood",
+                        map: neighborhoodMap,
+                        center: [-80.1496, 26.0112],
+                        zoom: 12
+                    });
+
+                    neighborhoodView.when(() => {
+                        const neighborhoodLegend = new Legend({
+                            view: neighborhoodView
+                        });
+                        neighborhoodView.ui.add(neighborhoodLegend, "bottom-left");
+                    });
+                } else {
+                    console.log("No features returned from GeoJSON");
+                    document.getElementById("projectDetails").innerHTML = "<p>No projects available.</p>";
+                    document.getElementById("map-district").innerHTML = "<p>No data available for map.</p>";
+                    document.getElementById("map-neighborhood").innerHTML = "<p>No data available for map.</p>";
+                }
+            })
+            .catch(err => {
+                console.error("Fetch error:", err);
+                document.getElementById("projectDetails").innerHTML = "<p>Error loading data: " + err.message + "</p>";
+                document.getElementById("map-district").innerHTML = "<p>Error loading map data: " + err.message + "</p>";
+                document.getElementById("map-neighborhood").innerHTML = "<p>Error loading map data: " + err.message + "</p>";
+            });
+    });
 });
 
 function switchTab(tab) {
@@ -111,7 +206,6 @@ function populateFilters(features) {
 
             const currentValue = select.value;
             if (values.size === 0) {
-                // If no values are available, display "N/A" and disable the dropdown
                 select.innerHTML = `<option value="All">N/A</option>`;
                 select.disabled = true;
             } else {
