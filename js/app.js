@@ -5,15 +5,18 @@ let allFeatures = [];
 let districtMap, neighborhoodMap;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Fetch GeoJSON data
+    // Fetch GeoJSON data with enhanced logging
+    console.log("Attempting to fetch GeoJSON data...");
     fetch("data/COH_CIPSpnt.geojson")
         .then(response => {
+            console.log("Fetch response status:", response.status);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status} (${response.statusText})`);
             }
             return response.json();
         })
         .then(data => {
+            console.log("GeoJSON data received:", data);
             const geojsonLayer = {
                 features: data.features
             };
@@ -38,13 +41,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
     // Load ArcGIS modules for maps
+    console.log("Loading ArcGIS modules...");
     require([
         "esri/Map",
         "esri/views/MapView",
         "esri/layers/GeoJSONLayer",
         "esri/widgets/Legend"
     ], (Map, MapView, GeoJSONLayer, Legend) => {
-        // Initialize GeoJSON layer for maps
+        console.log("ArcGIS modules loaded successfully");
         const geojsonLayerForMap = new GeoJSONLayer({
             url: "data/COH_CIPSpnt.geojson",
             popupTemplate: {
@@ -86,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const districtView = new MapView({
             container: "map-district",
             map: districtMap,
-            center: [-80.1496, 26.0112], // Hollywood, FL coordinates
+            center: [-80.1496, 26.0112],
             zoom: 12
         });
 
@@ -95,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 view: districtView
             });
             districtView.ui.add(districtLegend, "bottom-left");
+            console.log("District map initialized");
         });
 
         // Initialize Neighborhood Map
@@ -115,7 +120,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 view: neighborhoodView
             });
             neighborhoodView.ui.add(neighborhoodLegend, "bottom-left");
+            console.log("Neighborhood map initialized");
         });
+    }, (err) => {
+        console.error("Error loading ArcGIS modules:", err);
+        document.getElementById("map-district").innerHTML = "<p>Error loading map: ArcGIS modules failed to load.</p>";
+        document.getElementById("map-neighborhood").innerHTML = "<p>Error loading map: ArcGIS modules failed to load.</p>";
     });
 });
 
