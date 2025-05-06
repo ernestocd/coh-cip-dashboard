@@ -249,6 +249,13 @@ canvas {
     height: 100% !important;
 }
 
+.map-view {
+    width: 100%;
+    height: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
 .project-detail-nav {
     display: flex;
     justify-content: center;
@@ -314,6 +321,9 @@ canvas {
         width: 100%;
         max-width: 450px;
     }
+    .map-view {
+        height: 500px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -346,49 +356,4 @@ canvas {
         flex-direction: column;
         align-items: center;
     }
-    .chart-container {
-        width: 100%;
-        max-width: 400px;
-        height: 280px;
-    }
-    header h1 {
-        font-size: 1.8rem;
-    }
-    nav {
-        flex-direction: column;
-        gap: 10px;
-    }
-    nav button {
-        padding: 0.6em 1.2em;
-        font-size: 0.9rem;
-        width: 200px;
-        margin: 0 auto;
-    }
-}
-
-@media (max-width: 480px) {
-    header {
-        padding: 1.5em;
-    }
-    header h1 {
-        font-size: 1.5rem;
-    }
-    nav button {
-        width: 180px;
-        padding: 0.5em 1em;
-    }
-    #filters {
-        padding: 1em;
-    }
-    .filter-group select, #clear-filters {
-        font-size: 0.9em;
-        padding: 0.6em;
-    }
-    .filter-group .radio-group {
-        flex-direction: column;
-        gap: 5px;
-    }
-    .metric p {
-        font-size: 1.4em;
-    }
-}
+    .chart
